@@ -176,23 +176,40 @@ class ProductType
 
     public static function resolveImages(J2StoreTableProduct $product): array
     {
-        $images = json_decode($product->additional_images, true);
-        $alt = json_decode($product->additional_images_alt, true);
+    $images = json_decode($product->additional_images ?? '[]', true);
+    $alt    = json_decode($product->additional_images_alt ?? '[]', true);
 
-        if (is_array($images) && is_array($alt)) {
-            $result = [];
+    if (!is_array($images)) {
+        $images = [];
+    }
+    if (!is_array($alt)) {
+        $alt = [];
+    }
 
-            foreach ($images as $key => $image) {
-                $result[] = [
-                    'url' => $image,
-                    'alt_text' => $alt[$key] ?? '',
-                ];
-            }
+    $images = array_values($images);
+    $alt    = array_values($alt);
 
-            return $result;
+    $result = [];
+
+    // Prepend the main image first
+    if (!empty($product->main_image)) {
+        $result[] = [
+            'url'      => $product->main_image,
+            'alt_text' => $product->main_image_alt ?? '',
+        ];
+    }
+
+    foreach ($images as $index => $image) {
+        if (empty($image)) {
+            continue;
         }
+        $result[] = [
+            'url'      => $image,
+            'alt_text' => $alt[$index] ?? '',
+        ];
+    }
 
-        return [];
+    return $result;
     }
 
     protected static function toUIkit(string $html): string
