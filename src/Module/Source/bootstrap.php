@@ -1,16 +1,24 @@
 <?php
 
-namespace ZOOlanders\YOOtheme\J2Commerce\Module\Source;
+use YOOtheme\Builder\Source;
 
-require_once(JPATH_ADMINISTRATOR . '/components/com_j2store/helpers/j2store.php');
+if (!class_exists(Source::class)) {
+    return;
+}
+
+// Force load classes
+require_once __DIR__ . '/Listener/LoadSourceTypes.php';
+require_once __DIR__ . '/Type/J2StoreProductType.php';
 
 return [
-
     'events' => [
-        'source.init' => [
-            Listener\LoadSourceTypes::class => '@handle',
-            Listener\ExtendArticleType::class => ['@handle', -100],
-        ]
+        'source.init' => function (Source $source) {
+            try {
+                (new \J2Commerce\Listener\LoadSourceTypes())->handle($source);
+            } catch (\Exception $e) {
+                // This will help us see errors
+                error_log('J2Store Source Error: ' . $e->getMessage());
+            }
+        }
     ]
-
 ];
