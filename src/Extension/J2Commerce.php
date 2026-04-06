@@ -1,38 +1,34 @@
 <?php
+namespace J2Commerce\Extension;
 
-namespace ZOOlanders\YOOtheme\J2Commerce\Extension;
-
-use YOOtheme\Application;
+use Joomla\CMS\Factory;
 use Joomla\CMS\Plugin\CMSPlugin;
-use Joomla\CMS\Component\ComponentHelper;
+use Joomla\Event\SubscriberInterface;
+use Joomla\Database\DatabaseAwareInterface;   // ← Added
+use Joomla\Database\DatabaseAwareTrait;       // ← Added
 
-\defined('_JEXEC') or die;
-
-final class J2Commerce extends CMSPlugin
+class J2Commerce extends CMSPlugin implements SubscriberInterface, DatabaseAwareInterface
 {
-    public function onAfterInitialise()
+    use DatabaseAwareTrait;   // ← This provides setDatabase()
+
+    public static function getSubscribedEvents(): array
     {
-        // Check if the j2store component is enabled
-        if (!ComponentHelper::isEnabled('com_j2store', true)) {
+        return ['onAfterInitialise' => 'boot'];
+    }
+
+    public function boot()
+    {
+        error_log('=== J2Commerce Plugin Booted Successfully ===');
+        if (!class_exists('\YOOtheme\Application')) {
             return;
         }
 
-        // Check if FOF is loaded
-        if (!defined('F0F_INCLUDED') && file_exists(JPATH_LIBRARIES . '/f0f/include.php')) {
-            include_once JPATH_LIBRARIES . '/f0f/include.php';
-        }
-
-        if (!defined('F0F_INCLUDED') || !class_exists('F0FLess', true)) {
+        $app = Factory::getApplication();
+        if (!$app->isClient('site') && !$app->isClient('administrator')) {
             return;
         }
 
-        // Check if the YOOtheme app class exists
-        if (!class_exists(Application::class, false)) {
-            return;
-        }
-
-        // Load module from the same directory
-        $app = Application::getInstance();
-        $app->load(dirname(__DIR__) . '/Module/*/bootstrap.php');
+        $yoo = \YOOtheme\Application::getInstance();
+        $yoo->load(__DIR__ . '/../Module/Source/bootstrap.php');
     }
 }
