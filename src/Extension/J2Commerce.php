@@ -1,31 +1,34 @@
 <?php
-defined('_JEXEC') or die;
+namespace J2Commerce\Extension;
 
+use Joomla\CMS\Factory;
 use Joomla\CMS\Plugin\CMSPlugin;
 use Joomla\Event\SubscriberInterface;
+use Joomla\Database\DatabaseAwareInterface;   // ← Added
+use Joomla\Database\DatabaseAwareTrait;       // ← Added
 
-class PlgSystemJ2storeYootheme extends CMSPlugin implements SubscriberInterface
+class J2Commerce extends CMSPlugin implements SubscriberInterface, DatabaseAwareInterface
 {
+    use DatabaseAwareTrait;   // ← This provides setDatabase()
+
     public static function getSubscribedEvents(): array
     {
-        return [
-            'onAfterInitialise' => 'boot',
-        ];
+        return ['onAfterInitialise' => 'boot'];
     }
 
     public function boot()
     {
-        $app = \Joomla\CMS\Factory::getApplication();
-
-        if (!$app->isClient('site') && !$app->isClient('administrator')) {
-            return;
-        }
-
+        error_log('=== J2Commerce Plugin Booted Successfully ===');
         if (!class_exists('\YOOtheme\Application')) {
             return;
         }
 
-        $yooApp = \YOOtheme\Application::getInstance();
-        $yooApp->load(__DIR__ . '/src/Module/Source/bootstrap.php');
+        $app = Factory::getApplication();
+        if (!$app->isClient('site') && !$app->isClient('administrator')) {
+            return;
+        }
+
+        $yoo = \YOOtheme\Application::getInstance();
+        $yoo->load(__DIR__ . '/../Module/Source/bootstrap.php');
     }
 }
