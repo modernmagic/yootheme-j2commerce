@@ -1,32 +1,36 @@
 <?php
-
-namespace ZOOlanders\YOOtheme\J2Commerce\Module\Source\Listener;
+namespace J2Commerce\Listener;
 
 use YOOtheme\Builder\Source;
-use ZOOlanders\YOOtheme\J2Commerce\Module\Source\Type;
+use J2Commerce\Type\J2StoreProductType;
 
 class LoadSourceTypes
 {
-    /**
-     * @param Source $source
-     */
-    public function handle($source): void
+    public function handle(Source $source): void
     {
-        $query = [
-            Type\ProductQueryType::config(),
-        ];
+        $source->objectType('J2StoreProduct', J2StoreProductType::config());
 
-        $types = [
-            [Type\ProductType::NAME, Type\ProductType::config()],
-            [Type\ProductImageType::NAME, Type\ProductImageType::config()],
-        ];
+        $source->queryType([
+            'fields' => [
+                'j2storeProducts' => [
+                    'type' => ['listOf' => 'J2StoreProduct'],
+                    'metadata' => [
+                        'label' => 'J2Store Products',
+                        'group' => 'J2Store'
+                    ],
+                    'extensions' => [
+                        'call' => 'J2Commerce\Listener\LoadSourceTypes::resolveProducts'
+                    ]
+                ]
+            ]
+        ]);
+    }
 
-        foreach ($types as $args) {
-            $source->objectType(...$args);
+    public static function resolveProducts()
+    {
+        if (class_exists('\J2StoreHelper')) {
+            return \J2StoreHelper::getProducts(['published' => 1, 'limit' => 50]) ?: [];
         }
-
-        foreach ($query as $args) {
-            $source->queryType($args);
-        }
+        return [];
     }
 }
