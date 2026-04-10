@@ -174,27 +174,77 @@ class ProductType
         return self::toUIkit($html);
     }
 
-    public static function resolveImages(J2StoreTableProduct $product): array
-    {
-        $images = json_decode($product->additional_images, true);
-        $alt = json_decode($product->additional_images_alt, true);
+  public static function resolveImages(J2StoreTableProduct $product): array
+{
+    $result = [];
 
-        if (is_array($images) && is_array($alt)) {
-            $result = [];
+    // -----------------------------
+    // MAIN IMAGE (correct field for your setup)
+    // -----------------------------
+    $mainImage = $product->main_image 
+        ?? $product->thumb_image 
+        ?? $product->image 
+        ?? null;
 
-            foreach ($images as $key => $image) {
-                $result[] = [
-                    'url' => $image,
-                    'alt_text' => $alt[$key] ?? '',
-                ];
-            }
-
-            return $result;
-        }
-
-        return [];
+    if (!empty($mainImage)) {
+        $result[] = [
+            'url' => $mainImage,
+            'alt_text' => $product->main_image_alt 
+                ?? $product->thumb_image_alt 
+                ?? '',
+        ];
     }
 
+    // -----------------------------
+    // ADDITIONAL IMAGES (already working)
+    // -----------------------------
+    $images = $product->additional_images ?? [];
+    $alt = $product->additional_images_alt ?? [];
+
+    if (is_string($images)) {
+        $decoded = json_decode($images, true);
+        $images = is_array($decoded) ? $decoded : explode(',', $images);
+    }
+
+    if (is_string($alt)) {
+        $decoded = json_decode($alt, true);
+        $alt = is_array($decoded) ? $decoded : explode(',', $alt);
+    }
+
+    if (!is_array($images)) {
+        $images = [];
+    }
+
+    foreach ($images as $key => $image) {
+
+        if (!$image) {
+            continue;
+        }
+
+        $result[] = [
+            'url' => $image,
+            'alt_text' => $alt[$key] ?? '',
+        ];
+    }
+
+    // -----------------------------
+    // REMOVE DUPLICATES
+    // -----------------------------
+    $unique = [];
+    $seen = [];
+
+    foreach ($result as $img) {
+
+        if (empty($img['url']) || in_array($img['url'], $seen)) {
+            continue;
+        }
+
+        $seen[] = $img['url'];
+        $unique[] = $img;
+    }
+
+    return $unique;
+}
     protected static function toUIkit(string $html): string
     {
         // replace bootstrap class with UIkit
